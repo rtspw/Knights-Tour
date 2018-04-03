@@ -1,6 +1,6 @@
 #include <iostream>
 #include <sstream>
-#include <ctime>
+#include <time.h>
 #include "mystackll.h"
 #include "tile.h"
 
@@ -8,37 +8,49 @@ using namespace std;
 
 void generateChessboard(tile myChessboard[8][8]);
 void printChessboard(tile myChessboard[8][8]);
+
+bool performTour();
 bool isLegal(int x, int y, tile myChessboard[8][8]);
-bool findSolution(int xLoc, int yLoc, myStackLL<tile> &mainStack, tile myChessboard[8][8]);
+bool findSolution(int xLoc, int yLoc, bool &closed, myStackLL<tile> &mainStack, tile myChessboard[8][8]);
+bool isClosed(int x, int y, int ogX, int ogY, tile myChessboard[8][8]);
+bool askForRedo();
 
 void askForValues(int &xLoc, int &yLoc);
+void printSolution(bool closed, clock_t &time, myStackLL<tile> &mainStack);
 
 size_t getDegree(int x, int y, tile myChessboard[8][8]);
 
 int main() {
+    while(performTour()) {;}
+    return 0;
+}
+
+bool performTour() {
 
     myStackLL<tile> mainStack(64);
+    clock_t t = clock();
     tile chessboard[8][8];
     int xLoc, yLoc;
+    bool closed = false;
 
     generateChessboard(chessboard);
     printChessboard(chessboard);
 
     xLoc = yLoc = -1;
 
+    // Gets initial values from user
     while(xLoc < 0 || xLoc > 7 || yLoc < 0 || yLoc > 7) {
         askForValues(xLoc, yLoc);
         if(xLoc < 0 || xLoc > 7 || yLoc < 0 || yLoc > 7)
-            cout << "Values must be between 0 and 7." << endl;
+            cout << "Values must be between 0 and 7." << endl << endl;
     }
 
+    // Finds solution and prints if exists
     try {
-        if(findSolution(xLoc, yLoc, mainStack, chessboard)) {
-            cout << "Solution exists." << endl;
-        }
-        else {
+        if(findSolution(xLoc, yLoc, closed, mainStack, chessboard))
+            printSolution(closed, t, mainStack);
+        else
             cout << "No solution exists." << endl;
-        }
     }
     catch(MYSTACKLL_ERRORS e) {
         if(e == LL_STACK_EMPTY)
@@ -51,10 +63,20 @@ int main() {
     catch(...) {
         cout << "UNKNOWN ERROR OCCURED!" << endl;
     }
-
-    return 0;
+    return askForRedo();
 }
 
+/* isClosed
+ * Checks if final move is adjacent to original */
+bool isClosed(int x, int y, int ogX, int ogY, tile myChessboard[8][8]) {
+    for(size_t i = 0; i < 8; ++i) {
+        int attemptX = myChessboard[x][y].getAttemptX(i);
+        int attemptY = myChessboard[x][y].getAttemptY(i);
+        if(attemptX == ogX && attemptY == ogY)
+            return true;
+    }
+    return false;
+}
 
 /* askForValues
  * Initially asks user for inputs and sanitizes inputs */
@@ -63,7 +85,7 @@ void askForValues(int &xLoc, int &yLoc) {
     int y = -1;
     int x = -1;
     string input;
-    string xRowNames[8] = {"KR","KH","KB","K","Q","QB","QH","QR"};
+    string xRowNames[8] = {"KR","KK","KB","K","Q","QB","QK","QR"};
 
     cout << "Enter intial X value (KR, KH...): " << flush;
     getline(cin, input);
@@ -76,6 +98,7 @@ void askForValues(int &xLoc, int &yLoc) {
             x = i;
     }
 
+    // Gets Y value as integer
     cout << "Enter initial Y value (0 - 7): " << flush;
     getline(cin, input);
     stringstream ss;
@@ -83,6 +106,50 @@ void askForValues(int &xLoc, int &yLoc) {
     ss >> y;
     xLoc = x;
     yLoc = y;
+
+}
+
+/* askForRedo
+ * Checks if user wants to run program again with different values */
+bool askForRedo() {
+    string input;
+    cout << "Try with new initial values (y/n)? ";
+    getline(cin, input);
+    return toupper(input[0]) == 'Y';
+}
+
+/* printSolution
+ * Prints in a list, with new line every 8 outputs */
+void printSolution(bool closed, clock_t &time, myStackLL<tile> &mainStack) {
+
+    int iter = 0;
+
+    time = clock() - time;
+
+    cout << "Solution type : ";
+    if(closed)
+        cout << "CLOSED" << endl;
+    else
+        cout << "OPEN" << endl;
+
+        cout << "Elapsed time : ";
+    if((double)time == 0)
+        cout << "<0ms" << endl;
+    else
+        cout << time << "ms" << endl;
+    cout << "- - - - - - - - - - - - - - - - - - - " << endl;
+    myStackLL<tile> reverseStack(64);
+    while(!mainStack.empty())
+        reverseStack.push(mainStack.pop());
+    while(!reverseStack.empty()) {
+        cout << reverseStack.pop() << ", ";
+        ++iter;
+        if(iter == 8) {
+            cout << endl;
+            iter = 0;
+        }
+    }
+    cout << "- - - - - - - - - - - - - - - - - - - " << endl;
 }
 
 /* getDegree
@@ -100,19 +167,20 @@ size_t getDegree(int x, int y, tile myChessboard[8][8]) {
     return degree;
 }
 
-bool findSolution(int xLoc, int yLoc, myStackLL<tile> &mainStack, tile myChessboard[8][8]) {
+bool findSolution(int xLoc, int yLoc, bool &closed, myStackLL<tile> &mainStack, tile myChessboard[8][8]) {
 
-    int nextX = 0;
-    int nextY = 0;
     int smallX;
     int smallY;
+    int nextX = 0;
+    int nextY = 0;
+    int originalX = xLoc;
+    int originalY = yLoc;
     int minDegree;
     bool hasPossibleNextMove;
 
     while(!mainStack.full()) {
 
-
-        cout << " | | | | | CURRENT MOVE : : " << myChessboard[xLoc][yLoc] << " | | | | | "  << " w/ attempts : " << myChessboard[xLoc][yLoc].getAttempts() << endl;
+        //cout << " | | | | | CURRENT MOVE : : " << myChessboard[xLoc][yLoc] << " | | | | | "  << " w/ attempts : " << myChessboard[xLoc][yLoc].getAttempts() << endl;
         //cout << " Top of Stack : " << mainStack.peek() << " of size : " << mainStack.size() << endl;
 
         mainStack.push(myChessboard[xLoc][yLoc]);
@@ -123,6 +191,7 @@ bool findSolution(int xLoc, int yLoc, myStackLL<tile> &mainStack, tile myChessbo
         smallY = 0;
         hasPossibleNextMove = false;
 
+        // Main loop : finds tile with lowest degree and sets next
         for(size_t i = 0; i < 8; ++i) {
             nextX = myChessboard[xLoc][yLoc].getAttemptX(i);
             nextY = myChessboard[xLoc][yLoc].getAttemptY(i);
@@ -137,59 +206,27 @@ bool findSolution(int xLoc, int yLoc, myStackLL<tile> &mainStack, tile myChessbo
             }
         }
 
+        // If all attempts unavaliable, backtracks using stack
         if(!hasPossibleNextMove && mainStack.size() < 64) {
             myChessboard[xLoc][yLoc].setTaken(false);
             xLoc = mainStack.peek().getX();
             yLoc = mainStack.peek().getY();
             mainStack.pop();
         }
-//        else {
+        else {
             xLoc = smallX;
             yLoc = smallY;
-//        }
+        }
 
-
-
-
-
-//        while(myChessboard[xLoc][yLoc].getAttempts() < 8 && !moveToNext) {
-//            nextX = myChessboard[xLoc][yLoc].getAttemptX(-1);
-//            nextY = myChessboard[xLoc][yLoc].getAttemptY(-1);
-//            //cout << "Trying value (" << nextX << "," << nextY << ") on attempt : " << myChessboard[xLoc][yLoc].getAttempts() << endl;
-//            ++myChessboard[xLoc][yLoc];
-//            if(isLegal(nextX, nextY, myChessboard)) {
-//                if(mainStack.peek() != myChessboard[xLoc][yLoc]) {
-//                    //cout << "Attempts before push : " << myChessboard[xLoc][yLoc].getAttempts() << endl;
-//                    mainStack.push(myChessboard[xLoc][yLoc]);
-//                }
-//                myChessboard[xLoc][yLoc].setTaken(true);
-//                xLoc = nextX;
-//                yLoc = nextY;
-//                moveToNext = true;
-
-//                //cout << " Setting next position : " << myChessboard[xLoc][yLoc] << endl;
-//            }
-//        }
-
-//        if(myChessboard[oldX][oldY].getAttempts() >= 8 && !moveToNext) {
-//            //cout << "BACKTRACKING! :: " << myChessboard[oldX][oldY] << " with taken : " << myChessboard[oldX][oldY].isTaken() << endl;
-//            myChessboard[oldX][oldY].setTaken(false);  // MAIN ISSUE!!!
-//            myChessboard[oldX][oldY].resetAttempts();
-
-//            xLoc = mainStack.peek().getX();
-//            yLoc = mainStack.peek().getY();
-//            mainStack.pop();
-//        }
+        // When no solution exists
+        if(mainStack.empty())
+            return false;
 
         printChessboard(myChessboard);
     }
 
-    if(mainStack.empty())
-        return false;
-
+    closed = isClosed(xLoc, yLoc, originalX, originalY, myChessboard);
     return true;
-
-
 }
 
 /* generateChessboard
