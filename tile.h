@@ -20,8 +20,8 @@ public:
     size_t getY();
     size_t getAttempts();
     void resetAttempts();
-    int getAttemptX();
-    int getAttemptY();
+    int getAttemptX(int val);
+    int getAttemptY(int val);
     bool isTaken();
 
     bool operator==(const tile &other);
@@ -44,7 +44,8 @@ private:
     int movesX[8] = {1, 2, 2, 1, -1, -2, -2, -1};
     int movesY[8] = {2, 1, -1, -2, -2, -1, 1, 2};
 
-
+    std::string xRowNames[8] = {"KR","KH","KB","K","Q","QB","QH","QR"};
+    int yRowNames[8] = {1, 2, 3, 4, 5, 6, 7, 8};
 
 };
 

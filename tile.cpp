@@ -56,21 +56,27 @@ size_t tile::getAttempts() {
     return attemptNext;
 }
 
+
 void tile::resetAttempts() {
     attemptNext = 0;
 }
 
-int tile::getAttemptX() {
-    return xVal + movesX[attemptNext];
+int tile::getAttemptX(int val) {
+    if (val < 0)
+        val = attemptNext;
+    return xVal + movesX[val];
 }
 
-int tile::getAttemptY() {
-    return yVal + movesY[attemptNext];
+int tile::getAttemptY(int val) {
+    if (val < 0)
+        val = attemptNext;
+    return yVal + movesY[val];
 }
 
 bool tile::isTaken() {
     return taken;
 }
+
 
 /// Overloaded Operators
 
@@ -105,6 +111,6 @@ tile tile::operator--(int) {
 }
 
 std::ostream &operator<<(std::ostream &os, const tile &data) {
-    os << "(" << data.xVal << "," << data.yVal << ")";
+    os << data.xRowNames[data.xVal] << data.yVal;
     return os;
 }
