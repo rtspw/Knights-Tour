@@ -7,11 +7,13 @@ tile::tile(size_t x,  size_t y) {
     yVal = y;
     attemptNext = 0;
     taken = false;
+    current = false;
 }
 
 tile::~tile() {
     xVal = yVal = attemptNext = 0;
     taken = false;
+    current = false;
 }
 
 tile::tile(const tile &other) {
@@ -19,6 +21,7 @@ tile::tile(const tile &other) {
     yVal = other.yVal;
     attemptNext = other.attemptNext;
     taken = other.taken;
+    current = other.current;
 }
 
 tile &tile::operator=(const tile &other) {
@@ -27,6 +30,7 @@ tile &tile::operator=(const tile &other) {
         yVal = other.yVal;
         attemptNext = other.attemptNext;
         taken = other.taken;
+        current = other.current;
     }
     return *this;
 }
@@ -42,6 +46,10 @@ void tile::setY(size_t y) {
 }
 void tile::setTaken(bool a) {
     taken = a;
+}
+
+void tile::setCurrent(bool a) {
+    current = a;
 }
 
 size_t tile::getX() {
@@ -77,6 +85,9 @@ bool tile::isTaken() {
     return taken;
 }
 
+bool tile::isCurrent() {
+    return current;
+}
 
 /// Overloaded Operators
 

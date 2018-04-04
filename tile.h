@@ -16,6 +16,7 @@ public:
     void setX(size_t x);
     void setY(size_t y);
     void setTaken(bool a);
+    void setCurrent(bool a);
     size_t getX();
     size_t getY();
     size_t getAttempts();
@@ -23,6 +24,7 @@ public:
     int getAttemptX(int val);
     int getAttemptY(int val);
     bool isTaken();
+    bool isCurrent();
 
     bool operator==(const tile &other);
     bool operator!=(const tile &other);
@@ -40,11 +42,12 @@ private:
     size_t yVal;
     size_t attemptNext;
     bool taken;
+    bool current;
 
     int movesX[8] = {1, 2, 2, 1, -1, -2, -2, -1};
     int movesY[8] = {2, 1, -1, -2, -2, -1, 1, 2};
 
-    std::string xRowNames[8] = {"KR","KH","KB","K","Q","QB","QH","QR"};
+    std::string xRowNames[8] = {"KR","KK","KB","K","Q","QB","QK","QR"};
     int yRowNames[8] = {1, 2, 3, 4, 5, 6, 7, 8};
 
 };

@@ -143,6 +143,8 @@ size_t myStackLL<T>::capacity() {
 
 template<typename T>
 void myStackLL<T>::copy(const myStackLL<T> &other) {
+    mySize = 0;
+    myCapacity = other.myCapacity;
     for(node<T> *ptr = other.head; ptr; ptr = ptr->next)
         push(ptr->data);
 }
