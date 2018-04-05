@@ -119,7 +119,9 @@ T myStackLL<T>::pop() {
     if(empty())
         throw LL_STACK_EMPTY;
     T tempData = head->data;
+    node<T> *del = head;
     head = head->next;
+    delete del;
     --mySize;
     return tempData;
 }
