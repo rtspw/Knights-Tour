@@ -76,7 +76,7 @@ myStackLL<T>::myStackLL(const myStackLL<T> &other) {
 template<typename T>
 myStackLL<T> &myStackLL<T>::operator=(const myStackLL<T> &other) {
     if(this != &other) {
-        deleteAll(other);   //// FISHY!!!
+        deleteAll(other);
         copy(other);
     }
     return *this;

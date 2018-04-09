@@ -122,6 +122,6 @@ tile tile::operator--(int) {
 }
 
 std::ostream &operator<<(std::ostream &os, const tile &data) {
-    os << data.xRowNames[data.xVal] << data.yVal;
+    os << data.xRowNames[data.xVal] << data.yVal + 1;
     return os;
 }

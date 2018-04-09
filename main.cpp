@@ -15,7 +15,6 @@ void printChessboard(tile myChessboard[8][8]);
 bool performTour();
 bool isLegal(int x, int y, tile myChessboard[8][8]);
 bool findSolution(int xLoc, int yLoc, bool &closed, myStackLL<tile> &mainStack, tile myChessboard[8][8]);
-bool findSolution(int xLoc, int yLoc, bool &closed, myStackLL<tile> &mainStack, tile myChessboard[8][8]);
 bool findSolutionW(int xLoc, int yLoc, bool &closed, myStackLL<tile> &mainStack, tile myChessboard[8][8]);
 bool findSolutionQueue(int &xLoc, int &yLoc, bool &closed, pQueueArray<tile, int> &mainQueue, tile myChessboard[8][8]);
 bool findSolutionQueueW(int &xLoc, int &yLoc, bool &closed, pQueueArray<tile, int> &mainQueue, tile myChessboard[8][8]);
@@ -56,7 +55,7 @@ bool performTour() {
     while(xLoc < 0 || xLoc > 7 || yLoc < 0 || yLoc > 7) {
         askForValues(xLoc, yLoc);
         if(xLoc < 0 || xLoc > 7 || yLoc < 0 || yLoc > 7)
-            cout << "Values must be between 0 and 7." << endl << endl;
+            cout << "Values must be between 1 and 8." << endl << endl;
     }
 
     useStack = askForUseStack();
@@ -150,13 +149,13 @@ void askForValues(int &xLoc, int &yLoc) {
     }
 
     // Gets Y value as integer
-    cout << "Enter initial Y value (0 - 7): " << flush;
+    cout << "Enter initial Y value (1 - 8): " << flush;
     getline(cin, input);
     stringstream ss;
     ss << input;
     ss >> y;
     xLoc = x;
-    yLoc = y;
+    yLoc = y - 1;
 
 }
 
