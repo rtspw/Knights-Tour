@@ -18,13 +18,16 @@ bool findSolution(int xLoc, int yLoc, bool &closed, myStackLL<tile> &mainStack, 
 bool findSolution(int xLoc, int yLoc, bool &closed, myStackLL<tile> &mainStack, tile myChessboard[8][8]);
 bool findSolutionW(int xLoc, int yLoc, bool &closed, myStackLL<tile> &mainStack, tile myChessboard[8][8]);
 bool findSolutionQueue(int &xLoc, int &yLoc, bool &closed, pQueueArray<tile, int> &mainQueue, tile myChessboard[8][8]);
+bool findSolutionQueueW(int &xLoc, int &yLoc, bool &closed, pQueueArray<tile, int> &mainQueue, tile myChessboard[8][8]);
 bool isClosed(int x, int y, int ogX, int ogY, tile myChessboard[8][8]);
 bool askForRedo();
 bool askForUseStack();
 bool askForReplay();
+bool askAlgorithmType();
 
 void askForValues(int &xLoc, int &yLoc);
 void printReplay(myStackLL<tile> &mainStack);
+void printReplayQueue(pQueueArray<tile, int> &mainQueue);
 void printSolution(bool closed, clock_t &time, myStackLL<tile>& mainStack);
 void printSolutionQueue(bool closed, clock_t &time, pQueueArray<tile, int> &mainQueue);
 void findMoveOfLowestDegree(const int &xLoc, const int &yLoc, int &smallX, int &smallY, bool &nextMove, tile myChessboard[8][8]);
@@ -42,6 +45,7 @@ bool performTour() {
     int xLoc, yLoc;
     bool closed = false;
     bool useStack = true;
+    //bool useBruteForce = true;
 
     generateChessboard(chessboard);
     printChessboard(chessboard);
@@ -60,7 +64,7 @@ bool performTour() {
     clock_t t = clock();
 
     if(useStack) {
-//        try {
+        try {
             myStackLL<tile> mainStack(64);
             if(findSolution(xLoc, yLoc, closed, mainStack, chessboard)) {
                 myStackLL<tile> temp(mainStack);
@@ -70,24 +74,28 @@ bool performTour() {
             }
             else
                 cout << "No solution exists." << endl;
-//        }
-//        catch(MYSTACKLL_ERRORS e) {
-//            if(e == LL_STACK_EMPTY)
-//                cout << "ERROR: STACK EMPTY!" << endl;
-//            else if(e == LL_STACK_FULL)
-//                cout << "ERROR: STACK FULL!" << endl;
-//            else if(e == LL_BAD_SIZE)
-//                cout << "ERROR: BAD STACK SIZE!" << endl;
-//        }
-//        catch(...) {
-//            cout << "UNKNOWN ERROR OCCURED!" << endl;
-//        }
+        }
+        catch(MYSTACKLL_ERRORS e) {
+            if(e == LL_STACK_EMPTY)
+                cout << "ERROR: STACK EMPTY!" << endl;
+            else if(e == LL_STACK_FULL)
+                cout << "ERROR: STACK FULL!" << endl;
+            else if(e == LL_BAD_SIZE)
+                cout << "ERROR: BAD STACK SIZE!" << endl;
+        }
+        catch(...) {
+            cout << "UNKNOWN ERROR OCCURED!" << endl;
+        }
     }
     else {
         try {
-            pQueueArray<tile, int> mainQueue(65);
-            if(findSolutionQueue(xLoc, yLoc, closed, mainQueue, chessboard))
+            pQueueArray<tile, int> mainQueue(64);
+            if(findSolutionQueue(xLoc, yLoc, closed, mainQueue, chessboard)) {
+                pQueueArray<tile, int> temp(mainQueue);
                 printSolutionQueue(closed, t, mainQueue);
+                if(askForReplay())
+                    printReplayQueue(temp);
+            }
             else
                 cout << "No solution exists." << endl;
         }
@@ -160,6 +168,17 @@ bool askForReplay() {
     return toupper(input[0]) == 'Y';
 }
 
+/* askAlgorithmType
+ * Asks if user wants to use brute-force or Warnsdorff */
+bool askAlgorithmType() {
+    string input;
+    while(toupper(input[0]) != 'B' && toupper(input[0]) != 'W') {
+        cout << "Brute-force or Warnsdorff (b/w)? ";
+        getline(cin, input);
+    }
+    return toupper(input[0]) == 'B';
+}
+
 /* askForRedo
  * Checks if user wants to run program again with different values */
 bool askForRedo() {
@@ -198,6 +217,22 @@ void printReplay(myStackLL<tile> &mainStack) {
     }
 }
 
+void printReplayQueue(pQueueArray<tile, int> &mainQueue) {
+    tile display[8][8];
+    int currentX, currentY;
+    generateChessboard(display);
+    while(!mainQueue.empty()) {
+        currentX = mainQueue.peek().getX();
+        currentY = mainQueue.dequeue().getY();
+        display[currentX][currentY].setCurrent(true);
+        display[currentX][currentY].setTaken(true);
+        std::this_thread::sleep_for(std::chrono::milliseconds(300));
+        system("cls");
+        printChessboard(display);
+        display[currentX][currentY].setCurrent(false);
+    }
+}
+
 /* printSolution
  * Prints in a list, with new line every 8 outputs */
 void printSolution(bool closed, clock_t &time, myStackLL<tile> &mainStack) {
@@ -219,7 +254,9 @@ void printSolution(bool closed, clock_t &time, myStackLL<tile> &mainStack) {
     while(!mainStack.empty())
         reverseStack.push(mainStack.pop());
     while(!reverseStack.empty()) {
-        cout << reverseStack.pop() << ", ";
+        cout << reverseStack.pop();
+        if(reverseStack.size() != 0)
+            cout << ", ";
         ++iter;
         if(iter == 8) {
             cout << endl;
@@ -243,9 +280,10 @@ void printSolutionQueue(bool closed, clock_t &time, pQueueArray<tile, int> &main
     else
         cout << time << "ms" << endl;
     cout << "- - - - - - - - - - - - - - - - - - - " << endl;
-    mainQueue.dequeue();
     while(!mainQueue.empty()) {
-        cout << mainQueue.dequeue() << ", ";
+        cout << mainQueue.dequeue();
+        if(mainQueue.size() != 0)
+            cout << ", ";
         if(++iter == 8) {
             cout << endl;
             iter = 0;
@@ -290,7 +328,8 @@ void findMoveOfLowestDegree(const int &xLoc, const int &yLoc, int &smallX, int &
     }
 }
 
-// OFFICIAL
+/* findSolutionW
+ * Generates a solution stack based of that one German guy's algorithm */
 bool findSolutionW(int xLoc, int yLoc, bool &closed, myStackLL<tile> &mainStack, tile myChessboard[8][8]) {
 
     int smallX;
@@ -343,31 +382,25 @@ bool findSolution(int xLoc, int yLoc, bool &closed, myStackLL<tile> &mainStack, 
 
     while(!mainStack.full()) {
 
-        int tempx = xLoc; // debug
-        int tempy = yLoc; // debug
-
-        myChessboard[xLoc][yLoc].setCurrent(true);
         myChessboard[xLoc][yLoc].setTaken(true);
+        hasPossibleNextMove = false;
 
         if(mainStack.peek() != myChessboard[xLoc][yLoc])
             mainStack.push(myChessboard[xLoc][yLoc]);
 
-        hasPossibleNextMove = false;
-
+        // Finding next possible move
         numberOfAttempts = myChessboard[xLoc][yLoc].getAttempts();
         for(size_t i = numberOfAttempts; i < 8 && !hasPossibleNextMove; ++i) {
             nextX = myChessboard[xLoc][yLoc].getAttemptX(i);
             nextY = myChessboard[xLoc][yLoc].getAttemptY(i);
-            //cout << "Testing Position : (" << nextX << "," << nextY << ")" << endl;
             ++myChessboard[xLoc][yLoc];
-            if(isLegal(nextX, nextY, myChessboard)) {
+
+            if(isLegal(nextX, nextY, myChessboard))
                 hasPossibleNextMove = true;
-                //cout << "Next Legal Pos : (" << nextX << "," << nextY << ")" << endl;
-            }
         }
 
+        // Backtracking
         if(!hasPossibleNextMove && mainStack.size() < 64) {
-            //cout << "- Backtracking to " << mainStack.peek() << endl;
             mainStack.pop();
             myChessboard[xLoc][yLoc].setTaken(false);
             myChessboard[xLoc][yLoc].resetAttempts();
@@ -379,71 +412,15 @@ bool findSolution(int xLoc, int yLoc, bool &closed, myStackLL<tile> &mainStack, 
             yLoc = nextY;
         }
 
-        // When no solution exists
         if(mainStack.empty())
             return false;
 
-
-        myChessboard[tempx][tempy].setCurrent(false);
     }
     closed = isClosed(xLoc, yLoc, originalX, originalY, myChessboard);
     return true;
-
-
-//    int nextX = 0;
-//    int nextY = 0;
-//    bool moveToNext;
-
-//    mainStack.push(myChessboard[xLoc][yLoc]);
-//    while(!mainStack.full()) {
-
-//        moveToNext = false;
-
-//        cout << " | | | | | CURRENT MOVE : : " << myChessboard[xLoc][yLoc] << " | | | | | "  << " w/ attempts : " << myChessboard[xLoc][yLoc].getAttempts() << endl;
-//        cout << " Top of Stack : " << mainStack.peek() << " of size : " << mainStack.size() << endl;
-
-//        mainStack.push(myChessboard[xLoc][yLoc]);
-//        myChessboard[xLoc][yLoc].setTaken(true);
-
-//        while(myChessboard[xLoc][yLoc].getAttempts() < 8 && !moveToNext) {
-//            nextX = myChessboard[xLoc][yLoc].getAttemptX(-1);
-//            nextY = myChessboard[xLoc][yLoc].getAttemptY(-1);
-//            //cout << "Trying value (" << nextX << "," << nextY << ") on attempt : " << myChessboard[xLoc][yLoc].getAttempts() << endl;
-//            ++myChessboard[xLoc][yLoc];
-//            if(isLegal(nextX, nextY, myChessboard)) {
-//                if(mainStack.peek() != myChessboard[xLoc][yLoc]) {
-//                    //cout << "Attempts before push : " << myChessboard[xLoc][yLoc].getAttempts() << endl;
-//                    mainStack.push(myChessboard[xLoc][yLoc]);
-//                }
-//                myChessboard[xLoc][yLoc].setTaken(true);
-//                xLoc = nextX;
-//                yLoc = nextY;
-//                moveToNext = true;
-
-//                cout << " Setting next position : " << myChessboard[xLoc][yLoc] << endl;
-//            }
-//        }
-
-//        if(myChessboard[xLoc][yLoc].getAttempts() >= 8 && !moveToNext) {
-//            cout << "BACKTRACKING! :: " << myChessboard[xLoc][yLoc] << " with taken : " << myChessboard[xLoc][yLoc].isTaken() << endl;
-//            myChessboard[xLoc][yLoc].setTaken(false);  // MAIN ISSUE!!!
-//            myChessboard[xLoc][yLoc].resetAttempts();
-
-//            xLoc = mainStack.peek().getX();
-//            yLoc = mainStack.peek().getY();
-//            mainStack.pop();
-//        }
-
-//        //printChessboard(myChessboard);
-//    }
-
-//    if(mainStack.empty())
-//        return false;
-
-//    return true;
 }
 
-bool findSolutionQueue(int &xLoc, int &yLoc, bool &closed, pQueueArray<tile, int> &mainQueue, tile myChessboard[8][8]) {
+bool findSolutionQueueW(int &xLoc, int &yLoc, bool &closed, pQueueArray<tile, int> &mainQueue, tile myChessboard[8][8]) {
 
     int smallX,
         smallY,
@@ -468,6 +445,62 @@ bool findSolutionQueue(int &xLoc, int &yLoc, bool &closed, pQueueArray<tile, int
     }
     mainQueue.dequeue();
     mainQueue.enqueue(myChessboard[xLoc][yLoc], 0);
+    closed = isClosed(xLoc, yLoc, originalX, originalY, myChessboard);
+    return true;
+}
+
+bool findSolutionQueue(int &xLoc, int &yLoc, bool &closed, pQueueArray<tile, int> &mainQueue, tile myChessboard[8][8]) {
+    int nextX = 0;
+    int nextY = 0;
+    int iter = 0;
+    int originalX = xLoc;
+    int originalY = yLoc;
+    int numberOfAttempts;
+    bool hasPossibleNextMove;
+    mainQueue.enqueue(myChessboard[xLoc][yLoc], 0);
+
+    while(!mainQueue.full()) {
+
+        myChessboard[xLoc][yLoc].setTaken(true);
+        hasPossibleNextMove = false;
+
+        if(mainQueue.peek() != myChessboard[xLoc][yLoc])
+            mainQueue.enqueue(myChessboard[xLoc][yLoc], ++iter);
+
+        // Finding next possible move
+        numberOfAttempts = myChessboard[xLoc][yLoc].getAttempts();
+        for(size_t i = numberOfAttempts; i < 8 && !hasPossibleNextMove; ++i) {
+            nextX = myChessboard[xLoc][yLoc].getAttemptX(i);
+            nextY = myChessboard[xLoc][yLoc].getAttemptY(i);
+            ++myChessboard[xLoc][yLoc];
+
+            if(isLegal(nextX, nextY, myChessboard))
+                hasPossibleNextMove = true;
+        }
+
+        // Backtracking
+        if(!hasPossibleNextMove && mainQueue.size() < 64) {
+            mainQueue.dequeue();
+            --iter;
+            myChessboard[xLoc][yLoc].setTaken(false);
+            myChessboard[xLoc][yLoc].resetAttempts();
+            xLoc = mainQueue.peek().getX();
+            yLoc = mainQueue.peek().getY();
+        }
+        else {
+            xLoc = nextX;
+            yLoc = nextY;
+        }
+
+        if(mainQueue.empty())
+            return false;
+    }
+    size_t rev = 0;
+    pQueueArray<tile, int> reverse(64);
+    for(size_t i = 0; i < 64; ++i) {
+        reverse.enqueue(mainQueue.dequeue(), ++rev);
+    }
+    mainQueue = reverse;
     closed = isClosed(xLoc, yLoc, originalX, originalY, myChessboard);
     return true;
 }

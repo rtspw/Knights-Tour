@@ -28,7 +28,7 @@ public:
 private:
 
     size_t mySize, myCapacity;
-    size_t head, tail;
+    size_t tail;
     Data *queueArray;
     Priority *pArray;
 
@@ -46,7 +46,7 @@ pQueueArray<Data, Priority>::pQueueArray(size_t capacity) {
     if(capacity < 2)
         throw Q_BAD_SIZE;
     myCapacity = capacity;
-    mySize = head = tail = 0;
+    mySize = tail = 0;
     queueArray = new Data[capacity + 1];
     pArray = new Priority[capacity + 1];
 }
@@ -98,25 +98,27 @@ void pQueueArray<Data, Priority>::enqueue(const Data &d, const Priority &p) {
     int insertIndex = -1;
     ++mySize;
 
-    if(tail == myCapacity)
-        tail = 0;
-    else
-        ++tail;
-
     // Finds where to insert by priority
-    for(size_t i = head; i < tail; ++i) {
-        if(p <= pArray[i])
-            insertIndex = i;
+    for(size_t i = 0; i < tail; ++i) {
+        if(p < pArray[i])
+            insertIndex = i + 1;
     }
 
+    ++tail;
+
+    // Inserts original item when empty
+    if(mySize == 1) {
+        queueArray[0] = d;
+        pArray[0] = p;
+    }
     // Inserts to start if highest priority
-    if(insertIndex == -1) {
-        for(int i = tail; i > head ; --i) {
+    else if(insertIndex == -1) {
+        for(int i = tail; i > 0 ; --i) {
             queueArray[i] = queueArray[i-1];
             pArray[i] = pArray[i-1];
         }
-        queueArray[head] = d;
-        pArray[head] = p;
+        queueArray[0] = d;
+        pArray[0] = p;
     }
     // Inserts at index
     else {
@@ -124,15 +126,15 @@ void pQueueArray<Data, Priority>::enqueue(const Data &d, const Priority &p) {
             queueArray[i] = queueArray[i-1];
             pArray[i] = pArray[i-1];
         }
-        queueArray[insertIndex+1] = d;
-        pArray[insertIndex+1] = p;
+        queueArray[insertIndex] = d;
+        pArray[insertIndex] = p;
     }
 }
 
 template<typename Data, typename Priority>
 Data pQueueArray<Data, Priority>::peek() {
     if(empty()) throw Q_EMPTY;
-    return queueArray[head];
+    return queueArray[0];
 }
 
 template<typename Data, typename Priority>
@@ -140,14 +142,19 @@ Data pQueueArray<Data, Priority>::dequeue() {
 
     if(empty()) throw Q_EMPTY;
 
-    Data temp = queueArray[head];
-    queueArray[head] = Data();
-    pArray[head] = Priority();
-    if(head == myCapacity)
-        head = 0;
-    else
-        ++head;
+    Data temp = queueArray[0];
+    queueArray[0] = Data();
+    pArray[0] = Priority();
+    for(size_t i = 0; i < tail; ++i) {
+        queueArray[i] = queueArray[i + 1];
+        pArray[i] = pArray[i + 1];
+    }
+    queueArray[tail - 1] = Data();
+    pArray[tail - 1] = Priority();
+
     --mySize;
+    --tail;
+
     return temp;
 
 }
@@ -158,17 +165,17 @@ void pQueueArray<Data, Priority>::clear() {
         queueArray[i] = Data();
         pArray[i] = Priority();
     }
-    head = tail = mySize = 0;
+    tail = mySize = 0;
 }
 
 template<typename Data, typename Priority>
 void pQueueArray<Data, Priority>::copy(const pQueueArray<Data, Priority> &other) {
     myCapacity = other.myCapacity;
+    mySize = other.mySize;
     queueArray = new Data[other.myCapacity];
     pArray = new Priority[other.myCapacity];
-    head = other.head;
     tail = other.tail;
-    for(size_t i=head; i < myCapacity; ++i) {
+    for(size_t i=0; i < tail; ++i) {
         queueArray[i] = other.queueArray[i];
         pArray[i] = other.pArray[i];
     }
@@ -182,7 +189,7 @@ void pQueueArray<Data, Priority>::deleteAll() {
     }
     delete [] queueArray;
     delete [] pArray;
-    mySize = myCapacity = head = tail = 0;
+    mySize = myCapacity = tail = 0;
 }
 
 template<typename Data, typename Priority>
